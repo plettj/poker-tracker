@@ -126,26 +126,51 @@ def layout_family(m):
 
 
 def render_family(csv_path, all_labels, hi):
-    lowers = RANKS[RANKS.index(hi) :]  # include AA
-    m = len(lowers)
-    rows, cols = layout_family(m)
-    figw = max(6 * cols, 8)
-    figh = max(6 * rows, 6)
-    fig, axes = plt.subplots(rows, cols, figsize=(figw, figh))
-    try:
-        axes = axes.ravel().tolist()
-    except AttributeError:
-        axes = [axes]
+    lowers = RANKS[RANKS.index(hi) :]  # include AA..A2
+    parts = [(lo, len(RANKS) - RANKS.index(lo)) for lo in lowers]  # (lo, n)
+
+    total_w = sum(n for _, n in parts)
+    cut, acc = 0, 0
+    while cut < len(parts) and acc < total_w / 2:
+        acc += parts[cut][1]
+        cut += 1
+    row1, row2 = parts[:cut], parts[cut:]
+
+    r1_max = max(n for _, n in row1) if row1 else 0
+    r2_max = max(n for _, n in row2) if row2 else 0
+    CELL, HM, VM = 0.46, 1.35, 1.6  # inches per cell, horiz/vert margins
+
+    fig_w = CELL * max(sum(n for _, n in row1), sum(n for _, n in row2)) + HM
+    fig_h = CELL * (r1_max + r2_max) + VM
+    fig = plt.figure(figsize=(fig_w, fig_h))
+    gs = fig.add_gridspec(
+        nrows=2 if row2 else 1,
+        ncols=1,
+        height_ratios=[r1_max] + ([r2_max] if row2 else []),
+        hspace=0.15,
+    )
     fig.suptitle(f"PLO4 — {hi}-high families  •  {csv_path.stem}", fontsize=20, y=0.98)
 
-    for k, lo in enumerate(lowers):
-        ax = axes[k]
+    # row 1
+    sub1 = gs[0].subgridspec(
+        1, len(row1), width_ratios=[n for _, n in row1], wspace=0.06
+    )
+    for idx, (lo, n) in enumerate(row1):
+        ax = fig.add_subplot(sub1[0, idx])
         have = {h for h in all_labels if h.startswith(hi + lo)}
         draw_one(ax, have, hi, lo)
         ax.set_title(f"{hi}{lo}", fontsize=16, pad=6)
 
-    for k in range(m, len(axes)):
-        axes[k].axis("off")
+    # row 2 (if any)
+    if row2:
+        sub2 = gs[1].subgridspec(
+            1, len(row2), width_ratios=[n for _, n in row2], wspace=0.06
+        )
+        for idx, (lo, n) in enumerate(row2):
+            ax = fig.add_subplot(sub2[0, idx])
+            have = {h for h in all_labels if h.startswith(hi + lo)}
+            draw_one(ax, have, hi, lo)
+            ax.set_title(f"{hi}{lo}", fontsize=16, pad=6)
 
     out_png = csv_path.with_suffix("").with_name(f"{csv_path.stem}_{hi}_family.png")
     fig.tight_layout(rect=[0, 0, 1, 0.96])
@@ -155,7 +180,10 @@ def render_family(csv_path, all_labels, hi):
 
 def render_pair(csv_path, all_labels, pair):
     hi, lo = pair[0], pair[1]
-    fig, ax = plt.subplots(figsize=(8, 8))
+    n = len(RANKS) - RANKS.index(lo)
+    CELL, PAD = 0.42, 1.2
+    fig = plt.figure(figsize=(CELL * n + PAD, CELL * n + PAD))
+    ax = fig.add_subplot(111)
     have = {h for h in all_labels if h.startswith(hi + lo)}
     draw_one(ax, have, hi, lo)
     ax.set_title(f"PLO4 — {hi}{lo}  •  {csv_path.stem}", fontsize=18, pad=10)
