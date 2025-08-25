@@ -76,8 +76,9 @@ def draw_one(ax, have_set, hi, lo):
     assert all(r in ORDER for r in domain), f"bad cards in domain: {domain}"
     n = len(domain)
 
-    ax.set_xlim(0, n)
-    ax.set_ylim(0, n)
+    EPS = 0.02  # small data margin to avoid clipping strokes
+    ax.set_xlim(-EPS, n + EPS)
+    ax.set_ylim(-EPS, n + EPS)
     ax.set_aspect("equal")
     ax.invert_yaxis()
     ax.set_xticks([])
@@ -171,9 +172,10 @@ def layout_family(m):
 
 
 def render_family(csv_path, all_labels, hi):
-    lowers = CARDS[CARDS.index(hi) :]  # include AA..A2
+    lowers = CARDS[CARDS.index(hi) :]  # AA..A2
     parts = [(lo, len(CARDS) - CARDS.index(lo)) for lo in lowers]  # (lo, n)
 
+    # split into two balanced rows by total n (keeps rows visually even)
     total_w = sum(n for _, n in parts)
     cut, acc = 0, 0
     while cut < len(parts) and acc < total_w / 2:
@@ -181,44 +183,57 @@ def render_family(csv_path, all_labels, hi):
         cut += 1
     row1, row2 = parts[:cut], parts[cut:]
 
-    r1_max = max(n for _, n in row1) if row1 else 0
-    r2_max = max(n for _, n in row2) if row2 else 0
-    CELL, HM, VM = 0.42, 1.2, 1.4  # inches per cell, horiz/vert margins
+    # constant cell size; small gaps between grids; only vertical gap between rows
+    CELL = 0.42  # inches per cell (same as your pair renderer)
+    GAP_W = 0.24  # horizontal space between grids in a row
+    GAP_H = 0.42  # vertical gap between the two rows
+    TITLE_H = 0.70  # vertical clearance (in) reserved for the suptitle
 
-    fig_w = CELL * max(sum(n for _, n in row1), sum(n for _, n in row2)) + HM
-    fig_h = CELL * (r1_max + r2_max) + VM
-    fig = plt.figure(figsize=(fig_w, fig_h), constrained_layout=True)
-    gs = fig.add_gridspec(
-        nrows=2 if row2 else 1,
-        ncols=1,
-        height_ratios=[r1_max] + ([r2_max] if row2 else []),
-        hspace=0.25,
-    )
-    fig.suptitle(f"PLO4 — {hi}-high families  •  {csv_path.stem}", fontsize=20, y=1.02)
+    def row_dims(row):
+        if not row:
+            return 0.0, 0.0
+        width = sum(n * CELL for _, n in row) + GAP_W * (len(row) - 1)
+        height = max(n for _, n in row) * CELL
+        return width, height
 
-    # row 1
-    sub1 = gs[0].subgridspec(
-        1, len(row1), width_ratios=[n for _, n in row1], wspace=0.12
-    )
-    for idx, (lo, n) in enumerate(row1):
-        ax = fig.add_subplot(sub1[0, idx])
-        have = {h for h in all_labels if h.startswith(hi + lo)}
-        draw_one(ax, have, hi, lo)
-        ax.set_title(f"{hi}{lo}", fontsize=16, pad=6)
+    w1, h1 = row_dims(row1)
+    w2, h2 = row_dims(row2)
 
-    # row 2 (if any)
-    if row2:
-        sub2 = gs[1].subgridspec(
-            1, len(row2), width_ratios=[n for _, n in row2], wspace=0.12
-        )
-        for idx, (lo, n) in enumerate(row2):
-            ax = fig.add_subplot(sub2[0, idx])
-            have = {h for h in all_labels if h.startswith(hi + lo)}
+    inner_w = max(w1, w2)  # no L/R margins
+    fig_w = inner_w
+    fig_h = TITLE_H + h1 + (GAP_H if row2 else 0) + h2  # no bottom margin
+
+    fig = plt.figure(figsize=(fig_w, fig_h))  # manual placement
+    fig.suptitle(f"PLO4 — {hi}-high family  •  {csv_path.stem}", fontsize=20, y=0.995)
+
+    def place_row(row, y_bottom_in, row_height_in):
+        if not row:
+            return
+        row_w, _ = row_dims(row)
+        # horizontally center the whole row inside inner_w
+        x = (inner_w - row_w) / 2
+        for lo, n in row:
+            gw = gh = n * CELL
+            # vertically center THIS grid inside the row slot
+            bottom = y_bottom_in + (row_height_in - gh) / 2
+            left = x
+            ax = fig.add_axes([left / fig_w, bottom / fig_h, gw / fig_w, gh / fig_h])
+            have = {hnd for hnd in all_labels if hnd.startswith(hi + lo)}
             draw_one(ax, have, hi, lo)
-            ax.set_title(f"{hi}{lo}", fontsize=16, pad=6)
+            ax.set_title(rf"$\mathbf{{{hi}{lo}}}$??", fontsize=16, pad=6)
+            x += gw + GAP_W
+
+    # top row slot starts just under title band
+    y1 = fig_h - TITLE_H - h1
+    place_row(row1, y1, h1)
+
+    # bottom row slot (if any)
+    if row2:
+        y2 = 0.0
+        place_row(row2, y2, h2)
 
     out_png = csv_path.with_suffix("").with_name(f"{csv_path.stem}_{hi}_family.png")
-    fig.savefig(out_png, dpi=150, bbox_inches="tight", pad_inches=0.4)
+    fig.savefig(out_png, dpi=150, bbox_inches="tight", pad_inches=0.15)
     print(f"Wrote {out_png}")
 
 
