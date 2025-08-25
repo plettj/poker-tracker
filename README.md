@@ -20,6 +20,8 @@ There are many ways to classify the suitedness of PLO hands. This program follow
 4. `[2, 1, 1]` - Single-suited.
 5. `[1, 1, 1, 1]` - Monotone.
 
+Also, for the purposes of hand tracking, I have chosen to exclude monotone hands. Thus, the total number of distinct hands tracked by this program is `6851`.
+
 ### License
 
 - Feel free to use and distribute this code freely.
