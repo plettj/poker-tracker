@@ -31,7 +31,29 @@ There are many ways to classify the suitedness of PLO hands. This program follow
 4. `[2, 1, 1]` - Single-suited.
 5. `[1, 1, 1, 1]` - Monotone.
 
-Also, for the purposes of hand tracking, I have chosen to exclude monotone hands. Thus, the total number of distinct hands tracked by this program is `6851`.
+For the purposes of hand tracking, I have chosen to exclude monotone hands. The total number of distinct hands, then, is `6851`.
+
+<details><summary>Reading the tables</summary>
+
+<br>
+
+The yellow parts of each table represents the hands with a suited pair. Each cell has two options.
+
+- Left: single-suited (`[2, 1, 1]`)
+- Right: double-suited pure (`[2, 2]`)
+
+Similarly, the white parts of each table represent the following suitedness:
+
+- Left: rainbow (`[1, 1, 1, 1]`)
+- Right: tri-suited (`[3, 1]`)
+
+For cells representing a pair, the cell has 4 parts not 2, with the suited pairs (in yellow) being at the top, and others below.
+
+Impossible hand combinations are grey.
+
+---
+
+</details>
 
 ### License
 
