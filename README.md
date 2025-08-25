@@ -4,15 +4,15 @@ Have you ever wondered how many of the `7566` possible PLO hands you've won with
 
 Well, that's what this program is for.
 
-<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 1em 0;">
-  <img src="/output/sample_1_week_AA_grid.png" style="flex: 1 1 30%; max-width: 30%; height: auto;" />
-  <img src="/output/sample_1_week_KQ_grid.png" style="flex: 1 1 30%; max-width: 30%; height: auto;" />
-  <img src="/output/sample_1_week_A6_grid.png" style="flex: 1 1 30%; max-width: 35%; height: auto;" />
-</div>
+<p align="center" float="left">
+  <img src="/output/sample_1_week_AA_grid.png" alt="AA Grid" height="200px"/>
+  <img src="/output/sample_1_week_KQ_grid.png" alt="KQ Grid" height="200px"/>
+  <img src="/output/sample_1_week_A6_grid.png" alt="A6 Grid" height="200px"/>
+</p>
 
-<div style="display: flex; justify-content: center; margin: 1em 0;">
-  <img src="/output/sample_1_week_J_family.png" style="width: 100%; max-width: 98%; height: auto;" />
-</div>
+<p align="center">
+  <img src="/output/sample_1_week_J_family.png" alt="J Family" height="260px"/>
+</p>
 
 ### Usage
 
