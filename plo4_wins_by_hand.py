@@ -21,10 +21,10 @@ RX_WIN_1 = re.compile(r"^Hero collected \$(\d[\d.]*) from pot")
 RX_WIN_2 = re.compile(r"^Seat \d+: Hero .* (won|collected) \(\$[\d.]+\)")
 RX_WIN_3 = re.compile(r"^Hero won \(\$[\d.]+\)")
 # street detection tolerant to "FIRST FLOP", etc.
-RX_FLOP = re.compile(r"^\*\*\* .*FLOP .* \*\*\*")
-RX_TURN = re.compile(r"^\*\*\* .*TURN .* \*\*\*")
-RX_RIVER = re.compile(r"^\*\*\* .*RIVER .* \*\*\*")
-RX_SHOW = re.compile(r"( shows \[| showed \[)")
+RX_FLOP = re.compile(r"\*\*\*\s*FLOP(?:\s*\*\*\*)?", re.I)
+RX_TURN = re.compile(r"\*\*\*\s*TURN(?:\s*\*\*\*)?", re.I)
+RX_RIVER = re.compile(r"\*\*\*\s*RIVER(?:\s*\*\*\*)?", re.I)
+RX_SHOW = re.compile(r"( shows \[| showed \[)", re.I)
 
 
 def suit_tag(cards):
@@ -82,11 +82,12 @@ def hero_won(block):
 
 
 def classify_stage(block, showdown_hint):
-    f = any(RX_FLOP.match(l) for l in block)
-    t = any(RX_TURN.match(l) for l in block)
-    r = any(RX_RIVER.match(l) for l in block)
     if showdown_hint:
         return "showdown"
+    blob = "\n".join(block)
+    f = bool(RX_FLOP.search(blob))
+    t = bool(RX_TURN.search(blob))
+    r = bool(RX_RIVER.search(blob))
     if not f:
         return "preflop"
     if f and not t:
