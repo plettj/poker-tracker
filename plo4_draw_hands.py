@@ -250,15 +250,11 @@ def render_pair(csv_path, all_labels, pair):
 
 
 def render_all(csv_path, all_labels):
-    CELL = 0.42  # inches per cell
-    GAP_W = 0.24  # gap between grids inside a family
-    FAM_GAP = 0.36  # gap between families in the same row
-    ROW_GAP = 0.42  # gap between rows
-    TITLE_H = 0.90  # suptitle clearance
-
-    def family_parts(hi):
-        lowers = CARDS[CARDS.index(hi) :]
-        return [(lo, len(CARDS) - CARDS.index(lo)) for lo in lowers]  # (lo, n)
+    CELL = 0.42
+    GAP_W = 0.24  # inside a family (between grids)
+    FAM_GAP = 0.80  # between complete families (bigger)
+    ROW_GAP = 0.42
+    TITLE_H = 0.90
 
     def family_dims(parts):
         if not parts:
@@ -267,48 +263,83 @@ def render_all(csv_path, all_labels):
         h = max(n for _, n in parts) * CELL
         return w, h
 
-    # Banded order (new default):
-    bands = [["A", "3", "2"], ["K", "5", "4"], ["Q", "7", "6"], ["J", "8"], ["T", "9"]]
+    # banded order; first in each row will be flush-left, the rest flush-right
+    bands = [
+        ["A", "4", "3", "2"],
+        ["K", "6", "5"],
+        ["Q", "7"],
+        ["J", "8"],
+        ["T", "9"],
+    ]
     bands = [[hi for hi in grp if hi in CARDS] for grp in bands]
 
     fam_parts = {hi: family_parts(hi) for grp in bands for hi in grp}
+
+    # rows: [( [(hi, parts, w, h), ...], row_w, row_h ), ...]
     row_specs = []
     for grp in bands:
-        row_fams = [(hi, fam_parts[hi]) for hi in grp]
-        row_w = sum(family_dims(p)[0] for _, p in row_fams) + FAM_GAP * (
-            len(row_fams) - 1 if row_fams else 0
-        )
-        row_h = max((family_dims(p)[1] for _, p in row_fams), default=0.0)
-        row_specs.append((row_fams, row_w, row_h))
+        fams, row_w, row_h = [], 0.0, 0.0
+        for idx, hi in enumerate(grp):
+            parts = fam_parts[hi]
+            w, h = family_dims(parts)
+            fams.append((hi, parts, w, h))
+            row_w += (FAM_GAP if idx > 0 else 0.0) + w
+            row_h = max(row_h, h)
+        row_specs.append((fams, row_w, row_h))
 
     inner_w = max((rw for _, rw, _ in row_specs), default=0.0)
     fig_w = inner_w
     fig_h = TITLE_H + sum(h for _, _, h in row_specs) + ROW_GAP * (len(row_specs) - 1)
 
     fig = plt.figure(figsize=(fig_w, fig_h))
-    fig.suptitle(f"PLO4 — ALL families  •  {csv_path.stem}", fontsize=22, y=0.995)
+    fig.suptitle(
+        f"PLO4 — All 6851 possible hands  •  {csv_path.stem}", fontsize=22, y=0.995
+    )
 
     y = fig_h - TITLE_H
-    for row_fams, row_w, row_h in row_specs:
+    for fams, row_w, row_h in row_specs:
         y -= row_h
-        x = (inner_w - row_w) / 2
-        for hi, parts in row_fams:
-            fam_w, _ = family_dims(parts)
-            gx = x
-            for lo, n in parts:
-                gw = gh = n * CELL
-                bottom = y + (row_h - gh) / 2
-                ax = fig.add_axes([gx / fig_w, bottom / fig_h, gw / fig_w, gh / fig_h])
-                have = {h for h in all_labels if h.startswith(hi + lo)}
-                draw_one(ax, have, hi, lo)
-                ax.set_title(rf"$\mathbf{{{hi}{lo}}}$??", fontsize=14, pad=4)
-                gx += gw + GAP_W
-            x += fam_w + FAM_GAP
-        y -= ROW_GAP
+        x_left = 0.0
+        x_right = inner_w
 
-    out_png = csv_path.with_suffix("").with_name(f"{csv_path.stem}_ALL_families.png")
-    fig.savefig(out_png, dpi=120, bbox_inches="tight", pad_inches=0.15)
-    print(f"Wrote {out_png}")
+        if not fams:
+            y -= ROW_GAP
+            continue
+
+        # place FIRST family flush-left (bottom-aligned)
+        first_hi, first_parts, first_w, _ = fams[0]
+        gx = x_left
+        for lo, n in first_parts:
+            gw = gh = n * CELL
+            bottom = y  # flat bottoms
+            ax = fig.add_axes([gx / fig_w, bottom / fig_h, gw / fig_w, gh / fig_h])
+            have = {h for h in all_labels if h.startswith(first_hi + lo)}
+            draw_one(ax, have, first_hi, lo)
+            ax.set_title(rf"$\mathbf{{{first_hi}{lo}}}$??", fontsize=14, pad=4)
+            gx += gw + GAP_W
+
+        # place remaining families as a right-aligned block
+        rest = fams[1:]
+        if rest:
+            rest_w = sum(w for _, _, w, _ in rest) + FAM_GAP * (len(rest) - 1)
+            gx = x_right - rest_w
+            for idx, (hi, parts, w, _) in enumerate(rest):
+                # grids inside a family
+                for j, (lo, n) in enumerate(parts):
+                    gw = gh = n * CELL
+                    bottom = y
+                    ax = fig.add_axes(
+                        [gx / fig_w, bottom / fig_h, gw / fig_w, gh / fig_h]
+                    )
+                    have = {h for h in all_labels if h.startswith(hi + lo)}
+                    draw_one(ax, have, hi, lo)
+                    ax.set_title(rf"$\mathbf{{{hi}{lo}}}$??", fontsize=14, pad=4)
+                    gx += gw + GAP_W
+                # convert last internal GAP_W into a FAM_GAP, but skip after final family
+                if idx < len(rest) - 1:
+                    gx += FAM_GAP - GAP_W
+
+        y -= ROW_GAP
 
     out_png = csv_path.with_suffix("").with_name(f"{csv_path.stem}_ALL_families.png")
     fig.savefig(out_png, dpi=120, bbox_inches="tight", pad_inches=0.15)
