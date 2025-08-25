@@ -31,14 +31,14 @@ def suit_tag(cards):
     suits = [c[1].lower() for c in cards]
     counts = sorted(Counter(suits).values(), reverse=True)
     if counts == [4]:
-        return "m"
+        return "m"  # Mono-suited
     if counts == [3, 1]:
-        return "t"
+        return "t"  # Tri-suited
     if counts == [2, 2]:
-        return "p"
+        return "d"  # Double-suited (pure)
     if counts == [2, 1, 1]:
-        return "d"
-    return "r"
+        return "s"  # Single-suited
+    return "r"  # Rainbow
 
 
 def hand_label(cards):
