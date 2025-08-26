@@ -16,7 +16,7 @@ Well, that's what this program is for.
 
 ### Usage
 
-1. Export all the logs from PokerStars, and unzip them into this project folder, under `poker-tracker/data/<your folder name>`.
+1. Export all the logs from GGPoker, and unzip them into this project folder, under `poker-tracker/data/<your folder name>`.
 2. Run `python plo4_wins_by_hand.py <your folder name>` to generate a data table of the hands you've won with.
 3. Run `python plo4_draw_hands.py <option>` to visualize your hands!
    - `<option>`: empty to see all hands, or `A`/`K`/etc., or `AA`/`KT`/etc.
