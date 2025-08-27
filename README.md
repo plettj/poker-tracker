@@ -25,11 +25,11 @@ Well, that's what this program is for.
 
 There are many ways to classify the suitedness of PLO4 hands. This program follows the general consensus conventions, outlined below, where the notation like `[3, 1]` means `3` cards of one suit and `1` of another.
 
-1. `[4]` - Rainbow (Badugi).
+1. `[4]` - Monotone.
 2. `[3, 1]` - Tri-suited.
 3. `[2, 2]` - Double-suited pure.
 4. `[2, 1, 1]` - Single-suited.
-5. `[1, 1, 1, 1]` - Monotone.
+5. `[1, 1, 1, 1]` - Rainbow (Badugi).
 
 For the purposes of hand tracking, I have chosen to exclude monotone hands. The total number of distinct hands, then, is `6851`.
 
